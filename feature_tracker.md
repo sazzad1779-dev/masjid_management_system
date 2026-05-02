@@ -9,7 +9,7 @@ This document tracks the implemented features and their corresponding functions/
 | 03 | Masjid Profile & Customization | Done | `update_masjid_profile`, `get_masjid_profile`, `register_masjid`, `friday_jumuah_time`, `workspace_settings` |
 | 04 | Income Management | Done | `create_income`, `read_incomes`, `get_weekly_summary`, `read_income`, `update_income`, `delete_income` |
 | 05 | Expense Management | Done | `create_expense`, `read_expenses`, `get_monthly_summary`, `read_expense`, `update_expense`, `delete_expense` |
-| 06 | Account & Balance Management | Pending | |
+| 06 | Account & Balance Management | Done | `create_account`, `read_accounts`, `get_account_balance`, `create_transfer` |
 | 07 | Monthly Donation & Donor Management | Pending | |
 | 08 | Reporting & Analytics | Pending | |
 | 09 | Notifications & Alerts | Pending | |

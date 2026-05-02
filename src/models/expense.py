@@ -8,7 +8,7 @@ from sqlalchemy import Column, Numeric
 class Expense(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     masjid_id: uuid.UUID = Field(foreign_key="masjid.id", index=True)
-    account_id: Optional[uuid.UUID] = Field(default=None, index=True)
+    account_id: Optional[uuid.UUID] = Field(default=None, index=True, foreign_key="account.id")
     
     title: str = Field(index=True)
     amount: Decimal = Field(sa_column=Column(Numeric(precision=15, scale=2)))
