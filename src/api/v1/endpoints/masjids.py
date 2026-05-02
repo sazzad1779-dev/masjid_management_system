@@ -31,9 +31,17 @@ def update_masjid_profile(
 
 @router.get("/super-admin/analytics")
 def super_admin_analytics(session: Session = Depends(get_session)):
-    total_masjids = crud_masjid.masjid.count_all(session=session)
+    from src.models.user import User
+    from src.models.income import Income
+    from src.models.masjid import Masjid
+    from sqlmodel import select, func
+    
+    total_masjids = session.exec(select(func.count(Masjid.id))).one()
+    active_users = session.exec(select(func.count(User.id)).where(User.is_active == True)).one()
+    total_transactions = session.exec(select(func.count(Income.id))).one()
+    
     return {
         "total_masjids": total_masjids,
-        "active_users": 0, # Placeholder
-        "total_transactions": 0 # Placeholder
+        "active_users": active_users,
+        "total_transactions": total_transactions
     }

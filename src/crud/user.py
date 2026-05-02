@@ -4,7 +4,13 @@ from src.models.user import User
 from src.schemas.user import UserCreate, UserUpdate
 from src.core.security import get_password_hash, verify_password
 
+from src.models.masjid_member import MasjidMember
+
+import uuid
+
 def get_user(db: Session, user_id: str) -> Optional[User]:
+    if isinstance(user_id, str):
+        user_id = uuid.UUID(user_id)
     return db.get(User, user_id)
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
@@ -15,8 +21,6 @@ def create_user(db: Session, user_in: UserCreate) -> User:
     db_obj = User(
         email=user_in.email,
         hashed_password=get_password_hash(user_in.password),
-        role=user_in.role,
-        masjid_id=user_in.masjid_id,
         is_active=user_in.is_active,
     )
     db.add(db_obj)
@@ -37,6 +41,24 @@ def update_user(db: Session, db_user: User, user_in: UserUpdate) -> User:
     db.commit()
     db.refresh(db_user)
     return db_user
+
+def add_user_to_masjid(db: Session, user_id: str, masjid_id: str, role: str = "viewer") -> MasjidMember:
+    db_obj = MasjidMember(
+        user_id=user_id,
+        masjid_id=masjid_id,
+        role=role
+    )
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return db_obj
+
+def get_user_masjid_membership(db: Session, user_id: str, masjid_id: str) -> Optional[MasjidMember]:
+    statement = select(MasjidMember).where(
+        MasjidMember.user_id == user_id,
+        MasjidMember.masjid_id == masjid_id
+    )
+    return db.exec(statement).first()
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     user = get_user_by_email(db, email)

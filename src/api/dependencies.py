@@ -32,6 +32,12 @@ def get_current_user(db: Session = Depends(get_session), token: str = Depends(oa
         raise credentials_exception
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+    
+    # Store the token data (role, masjid_id) on the user object using private attributes
+    # to avoid SQLModel/SQLAlchemy trying to persist them to the DB.
+    user._token_masjid_id = token_data.masjid_id
+    user._token_role = token_data.role
+    
     return user
 
 class RoleChecker:
@@ -39,7 +45,17 @@ class RoleChecker:
         self.allowed_roles = allowed_roles
 
     def __call__(self, user: User = Depends(get_current_user)) -> User:
-        if user.role not in self.allowed_roles:
+        # Check if user has global super_admin or admin role in the token context
+        # In a real system, we might check a user.is_super_admin flag
+        # For now, we trust the role in the token if it matches
+        
+        user_role = getattr(user, "_token_role", "viewer")
+        user_masjid_id = getattr(user, "_token_masjid_id", None)
+        
+        if user_role == "super_admin":
+            return user
+            
+        if user_role not in self.allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Operation not permitted"

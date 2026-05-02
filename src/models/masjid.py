@@ -10,14 +10,20 @@ class Masjid(SQLModel, table=True):
     slug: str = Field(unique=True, index=True)
     address: str
     city: str
+    state: Optional[str] = None
     country: str
+    postal_code: Optional[str] = None
     contact_email: str
     phone: Optional[str] = None
+    website: Optional[str] = None
+    established_year: Optional[int] = None
+    about: Optional[str] = None
     logo_url: Optional[str] = None
+    cover_url: Optional[str] = None
     currency: str = Field(default="USD")
-    fiscal_year_start: str = Field(default="January")
+    fiscal_year_start_month: str = Field(default="January")
     primary_color: str = Field(default="#000000")
-    secondary_color: str = Field(default="#ffffff")
+    accent_color: str = Field(default="#ffffff")
     social_media: Dict = Field(default_factory=dict, sa_column=Column(JSON))
     is_public: bool = True
     is_active: bool = True

@@ -1,25 +1,37 @@
-# Authentication & Authorization Feature (Feature 2)
+# Walkthrough: Authentication & Authorization (Feature 2)
 
-I have successfully designed and implemented the standard email/password authentication along with Role-Based Access Control (RBAC) outlined in the feature docs.
+Aligned the authentication system with SRS requirements, moving to a multi-masjid membership architecture and implementing refresh token rotation.
 
 ## Changes Made
 
-- **Project Config ([pyproject.toml](file:///home/saif/Documents/Masjid_Management_system/pyproject.toml))**: Added `PyJWT`, `passlib[bcrypt]`, and `pydantic-settings` to dependencies.
-- **Config & Security Core (`src/core/`)**: 
-  - Updated `config.py` with standard settings (`SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`). 
-  - Created `security.py` to handle password hashing (via `passlib` and `bcrypt`) and JWT encoding/decoding.
-- **Models & Schemas (`src/models/user.py`, `src/schemas/user.py`)**: Defined an `Email`/`Password` based `User` model equipped with RBAC roles (`viewer`, `admin`, etc.) and mapped their corresponding Pydantic schemas. Added the model to `src/db/session.py` for automated schema generation.
-- **Data Access (`src/crud/user.py`)**: Implemented user creation, updating, retrieval, and a combined `authenticate_user` function.
-- **API Dependencies (`src/api/dependencies.py`)**: Mapped `get_current_user` to validate bearer tokens coming from clients and load the associated User from the database. Added a `RoleChecker` Dependency to restrict endpoints selectively.
-- **Auth Routes (`src/api/v1/endpoints/auth.py`)**: Exposed `/login/access-token` for token generation, `/signup` for registering new admins, and `/me` for resolving current context.
-- **Router Integration ([api.py](file:///home/saif/Documents/Masjid_Management_system/src/api/v1/api.py))**: Hooked prefix `/auth` to the main router.
-- **Seeder Script ([seed.py](file:///home/saif/Documents/Masjid_Management_system/src/db/seed.py))**: Added functionality to seed an initial superadmin user (`admin@masjid.com` / `admin123`) and a sample masjid.
-- **Automated Tests ([test_auth.py](file:///home/saif/Documents/Masjid_Management_system/tests/api/test_auth.py))**: Implemented tests for signup, login (success/failure), and protected route access using `pytest` and `FastAPI TestClient`.
+### 1. Multi-Masjid Membership Architecture
+- **New Model:** Created `MasjidMember` in [src/models/masjid_member.py](file:///home/saif/Documents/Masjid_Management_system/src/models/masjid_member.py) to manage the many-to-many relationship between users and masjids.
+- **Updated User Model:** Removed `masjid_id` and `role` from the `User` model in [src/models/user.py](file:///home/saif/Documents/Masjid_Management_system/src/models/user.py). Users now have their roles defined per masjid in the `MasjidMember` table.
 
-## Validation Results
+### 2. Enhanced Security
+- **Refresh Token Rotation:** Implemented `create_refresh_token` and a `/refresh` endpoint in [src/api/v1/endpoints/auth.py](file:///home/saif/Documents/Masjid_Management_system/src/api/v1/endpoints/auth.py) for secure token rotation.
+- **Context-Aware Tokens:** The JWT access token now carries the current `masjid_id` and `role`, allowing stateless authorization checks across different masjids.
 
-- **Seeder**: Running `python -m src.db.seed` successfully initializes the database with a superadmin.
-- **Tests**: Automated tests pass when running `pytest tests/api/test_auth.py`, confirming login and token validation work as expected.
-- The codebase is structured cleanly and perfectly aligns with our standard FastAPI MVC format.
-- Code dependencies are safely integrated.
-- The next step for you would be to `uv sync` or `pip install -e .` to ensure the new dependencies (`PyJWT`, `passlib`, `bcrypt`) fall directly into the active Python environment.
+### 3. Dependency Refactoring
+- **RoleChecker:** Updated the `RoleChecker` in [src/api/dependencies.py](file:///home/saif/Documents/Masjid_Management_system/src/api/dependencies.py) to support per-masjid role validation and platform-level super admin access.
+
+## Verification Results
+
+### Automated Tests
+Ran comprehensive tests in [tests/api/test_auth_feature.py](file:///home/saif/Documents/Masjid_Management_system/tests/api/test_auth_feature.py):
+- `test_login_access_token`: Verified that login returns both access and refresh tokens, and the access token contains correct masjid context.
+- `test_refresh_token`: Verified that the refresh token can be used to obtain a new access token.
+- `test_rbac_income_access`: Verified that roles (admin vs viewer) are correctly enforced based on the token's masjid context.
+
+**Result:** All 3 tests passed successfully.
+
+### Data Seeding
+Created a dedicated seeder [src/db/seeders/auth_seeder.py](file:///home/saif/Documents/Masjid_Management_system/src/db/seeders/auth_seeder.py) which populates:
+- A Super Admin.
+- Multiple Masjids.
+- Users with different roles in different masjids.
+
+**Result:** Seeder ran successfully and verified the membership logic.
+
+## Documentation Updated
+- Updated [feature_tracker.md](file:///home/saif/Documents/Masjid_Management_system/feature_tracker.md) to reflect the new architecture.

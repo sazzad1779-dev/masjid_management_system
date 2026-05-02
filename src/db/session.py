@@ -14,5 +14,6 @@ def init_db():
     # Import all models here so SQLModel knows about them
     from src.models.masjid import Masjid
     from src.models.user import User
+    from src.models.masjid_member import MasjidMember
     from src.models.income import Income
     SQLModel.metadata.create_all(engine)

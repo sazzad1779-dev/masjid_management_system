@@ -84,4 +84,7 @@ class CRUDIncome:
             "total_income": total_income
         }
 
+    def count_all(self, session: Session) -> int:
+        return len(session.exec(select(Income)).all())
+
 income = CRUDIncome()

@@ -1,48 +1,26 @@
 from sqlmodel import Session, select
 from src.db.session import engine, init_db
-from src.models.masjid import Masjid
-from src.crud.crud_masjid import masjid as crud_masjid
-from src.schemas.masjid import MasjidCreate
 from src.models.user import User
 from src.core.security import get_password_hash
+from src.db.seed_masjid import seed_masjids
+from src.db.seed_income import seed_income
 
 def seed_data():
     # Recreate tables with new schema
     init_db()
     
-    with Session(engine) as session:
-        # Seed Masjid Data
-        if crud_masjid.count_all(session) == 0:
-            print("Seeding initial masjid data...")
-            masjid_data = [
-                MasjidCreate(
-                    name="Central Masjid",
-                    slug="central-masjid",
-                    address="123 Main St",
-                    city="Capital City",
-                    country="CountryA",
-                    contact_email="admin@centralmasjid.com",
-                    phone="+1234567890",
-                    currency="USD",
-                    fiscal_year_start="January",
-                    primary_color="#2E7D32", # Green
-                    secondary_color="#FFD600", # Gold
-                    social_media={"facebook": "https://facebook.com/centralmasjid", "twitter": "https://twitter.com/centralmasjid"},
-                    is_public=True
-                )
-            ]
-            
-            for data in masjid_data:
-                crud_masjid.create(session=session, obj_in=data)
-                print(f"Created Masjid: {data.name}")
+    # Seed Masjid Data
+    seed_masjids()
 
+    with Session(engine) as session:
         # Seed User Data
-        statement = select(User).where(User.email == "admin@masjid.com")
+        statement = select(User).where(User.role == "super_admin")
         existing_user = session.exec(statement).first()
         
         if not existing_user:
             print("Seeding superadmin user...")
             super_admin = User(
+                full_name="Super Admin",
                 email="admin@masjid.com",
                 hashed_password=get_password_hash("admin123"),
                 role="super_admin",
@@ -53,6 +31,9 @@ def seed_data():
             print("Successfully seeded superadmin user.")
         else:
             print("Superadmin user already exists.")
+    
+    # Seed Income Data
+    seed_income()
 
 if __name__ == "__main__":
     import os

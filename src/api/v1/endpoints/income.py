@@ -23,9 +23,10 @@ def create_income(
     obj_in: IncomeBaseCreate, # I'll use a slightly different schema for the request
     current_user: User = Depends(allow_write)
 ):
-    # Ensure user belongs to the masjid they are recording for
-    # In a real multi-tenant app, we'd enforce this more strictly
-    if current_user.role != "super_admin" and current_user.masjid_id != obj_in.masjid_id:
+    current_role = getattr(current_user, "_token_role", "viewer")
+    current_masjid_id = getattr(current_user, "_token_masjid_id", None)
+    
+    if current_role != "super_admin" and str(current_masjid_id) != str(obj_in.masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     income_in = IncomeCreate(
@@ -46,7 +47,10 @@ def read_incomes(
     end_date: Optional[date] = None,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "super_admin" and current_user.masjid_id != masjid_id:
+    current_role = getattr(current_user, "_token_role", "viewer")
+    current_masjid_id = getattr(current_user, "_token_masjid_id", None)
+
+    if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     return crud_income.income.get_multi_by_masjid(
@@ -67,7 +71,10 @@ def get_weekly_summary(
     start_date: date,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "super_admin" and current_user.masjid_id != masjid_id:
+    current_role = getattr(current_user, "_token_role", "viewer")
+    current_masjid_id = getattr(current_user, "_token_masjid_id", None)
+
+    if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     return crud_income.income.get_weekly_summary(session=session, masjid_id=masjid_id, start_date=start_date)
@@ -83,7 +90,10 @@ def read_income(
     if not db_obj:
         raise HTTPException(status_code=404, detail="Income record not found")
     
-    if current_user.role != "super_admin" and current_user.masjid_id != db_obj.masjid_id:
+    current_role = getattr(current_user, "_token_role", "viewer")
+    current_masjid_id = getattr(current_user, "_token_masjid_id", None)
+
+    if current_role != "super_admin" and str(current_masjid_id) != str(db_obj.masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     return db_obj
@@ -100,7 +110,10 @@ def update_income(
     if not db_obj:
         raise HTTPException(status_code=404, detail="Income record not found")
     
-    if current_user.role != "super_admin" and current_user.masjid_id != db_obj.masjid_id:
+    current_role = getattr(current_user, "_token_role", "viewer")
+    current_masjid_id = getattr(current_user, "_token_masjid_id", None)
+
+    if current_role != "super_admin" and str(current_masjid_id) != str(db_obj.masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     return crud_income.income.update(session=session, db_obj=db_obj, obj_in=obj_in)
@@ -116,7 +129,10 @@ def delete_income(
     if not db_obj:
         raise HTTPException(status_code=404, detail="Income record not found")
     
-    if current_user.role != "super_admin" and current_user.masjid_id != db_obj.masjid_id:
+    current_role = getattr(current_user, "_token_role", "viewer")
+    current_masjid_id = getattr(current_user, "_token_masjid_id", None)
+
+    if current_role != "super_admin" and str(current_masjid_id) != str(db_obj.masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     return crud_income.income.remove(session=session, id=id, deleted_by=current_user.id)
