@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlmodel import Session
 from src.db.session import get_session
 from src.schemas.income import IncomeCreate, IncomeRead, IncomeUpdate, IncomeBaseCreate
@@ -6,6 +6,7 @@ from src.crud import crud_income
 from src.api.dependencies import get_current_user, RoleChecker
 from src.models.user import User
 from src.services.notification import NotificationService
+from src.services.audit_log import AuditLogService
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -21,6 +22,7 @@ allow_delete = RoleChecker(["super_admin", "admin"])
 def create_income(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     obj_in: IncomeBaseCreate, # I'll use a slightly different schema for the request
     current_user: User = Depends(allow_write)
 ):
@@ -45,6 +47,20 @@ def create_income(
         body=f"New income of {income.amount} {income.currency} recorded: {income.title}",
         related_entity_type="income",
         related_entity_id=income.id
+    )
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="create",
+        entity_type="income",
+        masjid_id=income.masjid_id,
+        entity_id=income.id,
+        new_value=income.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
     )
     
     return income
@@ -116,6 +132,7 @@ def read_income(
 def update_income(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     id: uuid.UUID,
     obj_in: IncomeUpdate,
     current_user: User = Depends(allow_write)
@@ -130,12 +147,31 @@ def update_income(
     if current_role != "super_admin" and str(current_masjid_id) != str(db_obj.masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_income.income.update(session=session, db_obj=db_obj, obj_in=obj_in)
+    old_value = db_obj.model_dump()
+    updated_obj = crud_income.income.update(session=session, db_obj=db_obj, obj_in=obj_in)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="update",
+        entity_type="income",
+        masjid_id=updated_obj.masjid_id,
+        entity_id=updated_obj.id,
+        old_value=old_value,
+        new_value=updated_obj.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return updated_obj
 
 @router.delete("/{id}", response_model=IncomeRead)
 def delete_income(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     id: uuid.UUID,
     current_user: User = Depends(allow_delete)
 ):
@@ -149,5 +185,22 @@ def delete_income(
     if current_role != "super_admin" and str(current_masjid_id) != str(db_obj.masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_income.income.remove(session=session, id=id, deleted_by=current_user.id)
+    old_value = db_obj.model_dump()
+    removed_obj = crud_income.income.remove(session=session, id=id, deleted_by=current_user.id)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="delete",
+        entity_type="income",
+        masjid_id=removed_obj.masjid_id,
+        entity_id=removed_obj.id,
+        old_value=old_value,
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return removed_obj
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlmodel import Session
 from src.db.session import get_session
 from src.schemas.account import (
@@ -8,6 +8,7 @@ from src.schemas.account import (
 from src.crud import crud_account
 from src.api.dependencies import get_current_user, RoleChecker
 from src.models.user import User
+from src.services.audit_log import AuditLogService
 import uuid
 from typing import List
 
@@ -20,6 +21,7 @@ allow_write = RoleChecker(["super_admin", "admin", "committee", "cashier"])
 def create_account(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     masjid_id: uuid.UUID,
     obj_in: AccountCreate,
     current_user: User = Depends(allow_write)
@@ -30,7 +32,23 @@ def create_account(
     if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_account.create_account(session, obj_in=obj_in, masjid_id=masjid_id, user_id=current_user.id)
+    account = crud_account.create_account(session, obj_in=obj_in, masjid_id=masjid_id, user_id=current_user.id)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="create",
+        entity_type="account",
+        masjid_id=masjid_id,
+        entity_id=account.id,
+        new_value=account.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return account
 
 @router.get("/", response_model=List[AccountRead])
 def read_accounts(
@@ -78,6 +96,7 @@ def get_account_balance(
 def create_transfer(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     masjid_id: uuid.UUID,
     obj_in: AccountTransferCreate,
     current_user: User = Depends(allow_write)
@@ -97,4 +116,20 @@ def create_transfer(
     if not to_acc or to_acc.masjid_id != masjid_id:
         raise HTTPException(status_code=404, detail="Destination account not found")
         
-    return crud_account.create_transfer(session, obj_in=obj_in, masjid_id=masjid_id, user_id=current_user.id)
+    transfer = crud_account.create_transfer(session, obj_in=obj_in, masjid_id=masjid_id, user_id=current_user.id)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="transfer",
+        entity_type="account_transfer",
+        masjid_id=masjid_id,
+        entity_id=transfer.id,
+        new_value=transfer.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return transfer

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlmodel import Session
 from src.db.session import get_session
 from src.schemas.expense import ExpenseCreate, ExpenseRead, ExpenseUpdate, ExpenseBaseCreate
@@ -6,6 +6,7 @@ from src.crud import crud_expense
 from src.api.dependencies import get_current_user, RoleChecker
 from src.models.user import User
 from src.services.notification import NotificationService
+from src.services.audit_log import AuditLogService
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -21,6 +22,7 @@ allow_delete = RoleChecker(["super_admin", "admin"])
 def create_expense(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     obj_in: ExpenseBaseCreate,
     current_user: User = Depends(allow_write)
 ):
@@ -45,6 +47,20 @@ def create_expense(
         body=f"New expense of {expense.amount} {expense.currency} recorded: {expense.title}",
         related_entity_type="expense",
         related_entity_id=expense.id
+    )
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="create",
+        entity_type="expense",
+        masjid_id=expense.masjid_id,
+        entity_id=expense.id,
+        new_value=expense.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
     )
     
     return expense
@@ -117,6 +133,7 @@ def read_expense(
 def update_expense(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     id: uuid.UUID,
     obj_in: ExpenseUpdate,
     current_user: User = Depends(allow_write)
@@ -131,12 +148,31 @@ def update_expense(
     if current_role != "super_admin" and str(current_masjid_id) != str(db_obj.masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_expense.expense.update(session=session, db_obj=db_obj, obj_in=obj_in)
+    old_value = db_obj.model_dump()
+    updated_obj = crud_expense.expense.update(session=session, db_obj=db_obj, obj_in=obj_in)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="update",
+        entity_type="expense",
+        masjid_id=updated_obj.masjid_id,
+        entity_id=updated_obj.id,
+        old_value=old_value,
+        new_value=updated_obj.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return updated_obj
 
 @router.delete("/{id}", response_model=ExpenseRead)
 def delete_expense(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     id: uuid.UUID,
     current_user: User = Depends(allow_delete)
 ):
@@ -150,4 +186,21 @@ def delete_expense(
     if current_role != "super_admin" and str(current_masjid_id) != str(db_obj.masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_expense.expense.remove(session=session, id=id, deleted_by=current_user.id)
+    old_value = db_obj.model_dump()
+    removed_obj = crud_expense.expense.remove(session=session, id=id, deleted_by=current_user.id)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="delete",
+        entity_type="expense",
+        masjid_id=removed_obj.masjid_id,
+        entity_id=removed_obj.id,
+        old_value=old_value,
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return removed_obj

@@ -13,4 +13,4 @@ This document tracks the implemented features and their corresponding functions/
 | 07 | Monthly Donation & Donor Management | Done | `create_donor`, `read_donors`, `generate_monthly_donations`, `verify_donation_payment` |
 | 08 | Reporting & Analytics | Done | `get_summary_stats`, `get_weekly_report`, `get_monthly_report`, `get_yearly_report`, `get_donor_report` |
 | 09 | Notifications & Alerts | Done | `NotificationService.create_notification`, `notify_masjid_admins`, `notify_income_recorded`, `notify_expense_recorded`, `notify_donation_verified`, `send_email` (placeholder), [Walkthrough](docs/walkthrough/feature_9_walkthrough.md) |
-| 10 | Audit & Activity Log | Pending | |
+| 10 | Audit & Activity Log | Done | `AuditLogService.log_action`, `/audit-logs`, [Walkthrough](docs/walkthrough/feature_10_walkthrough.md) |

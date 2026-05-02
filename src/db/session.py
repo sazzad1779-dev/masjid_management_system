@@ -17,5 +17,9 @@ def init_db():
     from src.models.masjid_member import MasjidMember
     from src.models.income import Income
     from src.models.expense import Expense, RecurringExpenseTemplate
+    from src.models.account import Account, AccountTransfer
+    from src.models.donor import Donor
+    from src.models.donation import DonationRecord
     from src.models.notification import Notification
+    from src.models.audit_log import AuditLog
     SQLModel.metadata.create_all(engine)

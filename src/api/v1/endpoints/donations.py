@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlmodel import Session
 import uuid
 from typing import List, Optional
@@ -8,6 +8,7 @@ from src.crud import crud_donation
 from src.api.dependencies import get_current_user, RoleChecker
 from src.models.user import User
 from src.services.notification import NotificationService
+from src.services.audit_log import AuditLogService
 
 router = APIRouter()
 
@@ -45,6 +46,7 @@ def read_donations(
 def generate_donations(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     masjid_id: uuid.UUID,
     obj_in: DonationGenerate,
     current_user: User = Depends(allow_write)
@@ -55,12 +57,29 @@ def generate_donations(
     if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_donation.generate_monthly_donations(session, masjid_id=masjid_id, month=obj_in.month)
+    donations = crud_donation.generate_monthly_donations(session, masjid_id=masjid_id, month=obj_in.month)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="generate",
+        entity_type="donations",
+        masjid_id=masjid_id,
+        entity_id=None, # Multiple entities
+        new_value={"month": obj_in.month, "count": len(donations)},
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return donations
 
 @router.put("/{record_id}/verify", response_model=DonationRecordRead)
 def verify_donation(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     masjid_id: uuid.UUID,
     record_id: uuid.UUID,
     obj_in: DonationVerify,
@@ -76,11 +95,27 @@ def verify_donation(
     if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
+    old_value = record.model_dump()
     donation = crud_donation.verify_donation_payment(
         session, 
         db_obj=record, 
         obj_in=obj_in, 
         user_id=current_user.id
+    )
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="verify",
+        entity_type="donation",
+        masjid_id=masjid_id,
+        entity_id=donation.id,
+        old_value=old_value,
+        new_value=donation.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
     )
 
     # Notify donor if they have a user account

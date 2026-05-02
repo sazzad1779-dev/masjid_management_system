@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlmodel import Session
 import uuid
 from typing import List, Optional
@@ -7,6 +7,7 @@ from src.schemas.donor import DonorCreate, DonorRead, DonorUpdate
 from src.crud import crud_donor
 from src.api.dependencies import get_current_user, RoleChecker
 from src.models.user import User
+from src.services.audit_log import AuditLogService
 
 router = APIRouter()
 
@@ -18,6 +19,7 @@ allow_read = RoleChecker(["super_admin", "admin", "committee", "cashier"])
 def create_donor(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     masjid_id: uuid.UUID,
     obj_in: DonorCreate,
     current_user: User = Depends(allow_write)
@@ -28,7 +30,23 @@ def create_donor(
     if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_donor.create_donor(session, obj_in=obj_in, masjid_id=masjid_id, user_id=current_user.id)
+    donor = crud_donor.create_donor(session, obj_in=obj_in, masjid_id=masjid_id, user_id=current_user.id)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="create",
+        entity_type="donor",
+        masjid_id=masjid_id,
+        entity_id=donor.id,
+        new_value=donor.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return donor
 
 @router.get("/", response_model=List[DonorRead])
 def read_donors(
@@ -71,6 +89,7 @@ def read_donor(
 def update_donor(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     masjid_id: uuid.UUID,
     donor_id: uuid.UUID,
     obj_in: DonorUpdate,
@@ -86,12 +105,31 @@ def update_donor(
     if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_donor.update_donor(session, db_obj=donor, obj_in=obj_in)
+    old_value = donor.model_dump()
+    updated_donor = crud_donor.update_donor(session, db_obj=donor, obj_in=obj_in)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="update",
+        entity_type="donor",
+        masjid_id=masjid_id,
+        entity_id=updated_donor.id,
+        old_value=old_value,
+        new_value=updated_donor.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return updated_donor
 
 @router.delete("/{donor_id}", response_model=DonorRead)
 def delete_donor(
     *,
     session: Session = Depends(get_session),
+    request: Request,
     masjid_id: uuid.UUID,
     donor_id: uuid.UUID,
     current_user: User = Depends(allow_write)
@@ -106,4 +144,22 @@ def delete_donor(
     if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_donor.deactivate_donor(session, donor_id=donor_id)
+    old_value = donor.model_dump()
+    removed_donor = crud_donor.deactivate_donor(session, donor_id=donor_id)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=session,
+        user_id=current_user.id,
+        user_name=current_user.email,
+        action="deactivate",
+        entity_type="donor",
+        masjid_id=masjid_id,
+        entity_id=removed_donor.id,
+        old_value=old_value,
+        new_value=removed_donor.model_dump(),
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
+    
+    return removed_donor

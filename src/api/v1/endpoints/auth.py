@@ -1,6 +1,6 @@
 from datetime import timedelta
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session
 
@@ -11,12 +11,14 @@ from src.schemas.user import Token, UserRead, UserCreate, TokenPayload
 from src.api.dependencies import get_current_user
 from src.db.session import get_session
 from src.models.user import User
+from src.services.audit_log import AuditLogService
 import jwt
 
 router = APIRouter()
 
 @router.post("/login/access-token", response_model=Token)
 def login_access_token(
+    request: Request,
     db: Session = Depends(get_session), form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
     """
@@ -47,6 +49,19 @@ def login_access_token(
         expires_delta=access_token_expires
     )
     refresh_token = create_refresh_token(subject=user.id)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=db,
+        user_id=user.id,
+        user_name=user.email,
+        action="login",
+        entity_type="user",
+        masjid_id=masjid_id,
+        entity_id=user.id,
+        ip_address=request.client.host,
+        user_agent=request.headers.get("user-agent")
+    )
     
     return {
         "access_token": access_token,
@@ -121,6 +136,7 @@ def reset_password(token: str, new_password: str) -> Any:
 @router.post("/signup", response_model=UserRead)
 def create_user_signup(
     *,
+    request: Request,
     db: Session = Depends(get_session),
     user_in: UserCreate,
 ) -> Any:
@@ -134,6 +150,19 @@ def create_user_signup(
             detail="The user with this username already exists in the system.",
         )
     user = crud_user.create_user(db, user_in=user_in)
+    
+    # Audit Log
+    AuditLogService.log_action(
+        db=db,
+        user_id=user.id,
+        user_name=user.email,
+        action="signup",
+        entity_type="user",
+        entity_id=user.id,
+        new_value=user.model_dump(exclude={"password_hash"}),
+        # Request not available here unless I add it to the signature
+        # I'll add Request to the signature
+    )
     return user
 
 @router.get("/me", response_model=UserRead)

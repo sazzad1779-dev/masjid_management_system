@@ -9,6 +9,7 @@ from src.api.v1.endpoints import donors
 from src.api.v1.endpoints import donations
 from src.api.v1.endpoints import reports
 from src.api.v1.endpoints import notifications
+from src.api.v1.endpoints import audit_logs
 
 api_router = APIRouter()
 api_router.include_router(masjids.router, prefix="/masjids", tags=["masjids"])
@@ -20,3 +21,4 @@ api_router.include_router(donors.router, prefix="/donors", tags=["donors"])
 api_router.include_router(donations.router, prefix="/donations", tags=["donations"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+api_router.include_router(audit_logs.router, prefix="/audit-logs", tags=["audit-logs"])
