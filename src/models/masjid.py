@@ -24,6 +24,9 @@ class Masjid(SQLModel, table=True):
     fiscal_year_start_month: str = Field(default="January")
     primary_color: str = Field(default="#000000")
     accent_color: str = Field(default="#ffffff")
+    friday_jumuah_time: Optional[str] = Field(default=None)
+    notification_settings: Dict = Field(default_factory=dict, sa_column=Column(JSON))
+    default_categories: Dict = Field(default_factory=dict, sa_column=Column(JSON))
     social_media: Dict = Field(default_factory=dict, sa_column=Column(JSON))
     is_public: bool = True
     is_active: bool = True

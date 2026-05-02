@@ -16,4 +16,5 @@ def init_db():
     from src.models.user import User
     from src.models.masjid_member import MasjidMember
     from src.models.income import Income
+    from src.models.expense import Expense, RecurringExpenseTemplate
     SQLModel.metadata.create_all(engine)

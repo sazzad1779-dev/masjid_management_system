@@ -1,30 +1,38 @@
-# Walkthrough - Feature 03: Masjid Profile & Customization
+# Walkthrough - Feature 3: Masjid Profile & Customization
 
-Successfully implemented Masjid Profile customization and settings.
+This walkthrough documents the implementation and verification of Feature 3, ensuring it aligns with the SRS requirements.
 
 ## Changes Made
 
-### Core Models & Schemas
-- **Model**: Updated [masjid.py](file:///home/saif/Documents/Masjid_Management_system/src/models/masjid.py) with new fields: `phone`, `currency`, `fiscal_year_start`, `primary_color`, `secondary_color`, `social_media` (JSON), and `is_public`.
-- **Schemas**: Updated [masjid.py](file:///home/saif/Documents/Masjid_Management_system/src/schemas/masjid.py) with a new `MasjidUpdate` schema and added the new fields to `MasjidBase`.
+### 1. Database Schema Alignment
+Updated the `Masjid` model in `src/models/masjid.py` to include missing fields:
+- `friday_jumuah_time`: For displaying Jumu'ah prayer times.
+- `notification_settings`: JSON field for workspace notification preferences.
+- `default_categories`: JSON field for masjid-specific income/expense categories.
+- `social_media`: JSON field for social media links.
 
-### CRUD Layer
-- **CRUD**: Added `update` method to [crud_masjid.py](file:///home/saif/Documents/Masjid_Management_system/src/crud/crud_masjid.py) to support partial profile updates.
+### 2. Schema Updates
+Updated Pydantic schemas in `src/schemas/masjid.py` (`MasjidCreate`, `MasjidUpdate`, `MasjidRead`) to support the new fields in API requests and responses.
 
-### API Layer
-- **Endpoints**: Added `PATCH /masjids/{masjid_id}` in [masjids.py](file:///home/saif/Documents/Masjid_Management_system/src/api/v1/endpoints/masjids.py) for profile updates.
+### 3. Dedicated Seeder
+Created `src/db/seed_feature_3.py` to populate the database with a comprehensive masjid profile ("Al-Noor Islamic Center") including all branding and setting fields.
 
-### Database Seeder
-- Created [seed.py](file:///home/saif/Documents/Masjid_Management_system/src/db/seed.py) to automate database initialization and seeding with sample masjid data.
+### 4. API Testing
+Created `tests/api/test_feature_3_masjid_profile.py` with tests for:
+- Creating a masjid with a full profile.
+- Retrieving the full profile.
+- Patching (updating) profile fields and workspace settings.
 
 ## Verification Results
 
-### Database Verification
-Ran a script to verify the seeded data in `masjid.db`:
-```
-ID: d598c855-e616-48c9-b016-7d3042b720e7, Name: Central Masjid, Primary Color: #2E7D32, Social: {'facebook': '...', 'twitter': '...'}
-ID: 58873072-5692-4123-940a-da5188066c40, Name: Historic Masjid, Primary Color: #1565C0, Social: {'instagram': '...'}
+### Automated Tests
+Ran `pytest tests/api/test_feature_3_masjid_profile.py`:
+```bash
+============== 3 passed, 6 warnings in 0.32s ==============
 ```
 
-### Feature Tracker
-Updated [feature_tracker.md](file:///home/saif/Documents/Masjid_Management_system/feature_tracker.md) to reflect Feature 03 as **Done**.
+### Manual Verification (Seeder)
+The seeder command `uv run python -m src.db.seed_feature_3` executes successfully and populates the database as expected.
+
+## Conclusion
+Feature 3 is now fully aligned with the SRS requirements, providing a robust masjid profile and customization system.

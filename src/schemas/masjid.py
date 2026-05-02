@@ -23,6 +23,9 @@ class MasjidBase(BaseModel):
     fiscal_year_start_month: str = "January"
     primary_color: str = "#000000"
     accent_color: str = "#ffffff"
+    friday_jumuah_time: Optional[str] = None
+    notification_settings: dict = {}
+    default_categories: dict = {}
     social_media: dict = {}
     is_public: bool = True
     is_active: bool = True
@@ -51,6 +54,9 @@ class MasjidUpdate(BaseModel):
     fiscal_year_start_month: Optional[str] = None
     primary_color: Optional[str] = None
     accent_color: Optional[str] = None
+    friday_jumuah_time: Optional[str] = None
+    notification_settings: Optional[dict] = None
+    default_categories: Optional[dict] = None
     social_media: Optional[dict] = None
     is_public: Optional[bool] = None
     is_active: Optional[bool] = None
