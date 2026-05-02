@@ -5,7 +5,7 @@ This document tracks the implemented features and their corresponding functions/
 | Feature ID | Feature Name | Status | Functions / Endpoints | Walkthrough |
 | --- | --- | --- | --- | --- |
 | 01 | Platform & Multi-Masjid Architecture | Done | `register_masjid`, `get_masjid_profile`, `super_admin_analytics` | [Platform_&_Multi-Masjid_Architecture](docs/walkthrough/Feature_1_Platform_&_Multi-Masjid_Architecture_walkthrough.md)|
-| 02 | Authentication & Authorization | Done | `login_access_token`, `refresh_token`, `add_user_to_masjid`, `RoleChecker` (context-aware) | [Authentication_&_Authorization_Feature](docs/walkthrough/feature_2_Authentication_&_Authorization_Feature.md) |
+| 02 | Authentication & Authorization | Done | `login_access_token`, `refresh_token`, `add_user_to_masjid`, `RoleChecker` (context-aware) | [Authentication_&_Authorization_Feature](docs/walkthrough/Feature_2_Authentication_&_Authorization_Feature.md) |
 | 03 | Masjid Profile & Customization | Done | `update_masjid_profile`, `get_masjid_profile`, `register_masjid`, `friday_jumuah_time`, `workspace_settings` | [Masjid_Profile_&_Customization_](docs/walkthrough/feature_3_Masjid_Profile_&_Customization__walkthrough.md)|
 | 04 | Income Management | Done | `create_income`, `read_incomes`, `get_weekly_summary`, `read_income`, `update_income`, `delete_income` | [Income_Management](docs/walkthrough/Feature_4_Income_Management_walkthrough.md)|
 | 05 | Expense Management | Done | `create_expense`, `read_expenses`, `get_monthly_summary`, `read_expense`, `update_expense`, `delete_expense` | [Expense_Management](docs/walkthrough/feature_5_Expense_Management_walkthrough.md) |
