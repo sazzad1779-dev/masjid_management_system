@@ -7,6 +7,7 @@ from src.schemas.donation import DonationRecordRead, DonationGenerate, DonationV
 from src.crud import crud_donation
 from src.api.dependencies import get_current_user, RoleChecker
 from src.models.user import User
+from src.services.notification import NotificationService
 
 router = APIRouter()
 
@@ -75,9 +76,24 @@ def verify_donation(
     if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    return crud_donation.verify_donation_payment(
+    donation = crud_donation.verify_donation_payment(
         session, 
         db_obj=record, 
         obj_in=obj_in, 
         user_id=current_user.id
     )
+
+    # Notify donor if they have a user account
+    if donation.donor.user_id:
+        NotificationService.create_notification(
+            db=session,
+            masjid_id=donation.masjid_id,
+            user_id=donation.donor.user_id,
+            type="donation_verified",
+            title="Donation Verified",
+            body=f"Your donation for {donation.month} has been verified as paid: {donation.paid_amount} {donation.donor.pledge_currency}",
+            related_entity_type="donation",
+            related_entity_id=donation.id
+        )
+    
+    return donation

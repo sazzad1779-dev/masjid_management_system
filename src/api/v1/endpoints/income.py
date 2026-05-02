@@ -5,6 +5,7 @@ from src.schemas.income import IncomeCreate, IncomeRead, IncomeUpdate, IncomeBas
 from src.crud import crud_income
 from src.api.dependencies import get_current_user, RoleChecker
 from src.models.user import User
+from src.services.notification import NotificationService
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -33,7 +34,20 @@ def create_income(
         **obj_in.model_dump(),
         recorded_by=current_user.id
     )
-    return crud_income.income.create(session=session, obj_in=income_in)
+    income = crud_income.income.create(session=session, obj_in=income_in)
+    
+    # Notify admins
+    NotificationService.notify_masjid_admins(
+        db=session,
+        masjid_id=income.masjid_id,
+        type="income_recorded",
+        title="New Income Recorded",
+        body=f"New income of {income.amount} {income.currency} recorded: {income.title}",
+        related_entity_type="income",
+        related_entity_id=income.id
+    )
+    
+    return income
 
 @router.get("/", response_model=List[IncomeRead])
 def read_incomes(

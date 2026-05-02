@@ -43,6 +43,7 @@ def update_user(db: Session, db_user: User, user_in: UserUpdate) -> User:
     return db_user
 
 def add_user_to_masjid(db: Session, user_id: str, masjid_id: str, role: str = "viewer") -> MasjidMember:
+    from src.services.notification import NotificationService
     db_obj = MasjidMember(
         user_id=user_id,
         masjid_id=masjid_id,
@@ -51,6 +52,23 @@ def add_user_to_masjid(db: Session, user_id: str, masjid_id: str, role: str = "v
     db.add(db_obj)
     db.commit()
     db.refresh(db_obj)
+    
+    # Trigger notification
+    NotificationService.notify_user_invitation(db, db_obj)
+    
+    return db_obj
+
+def update_masjid_member_role(db: Session, member_id: str, role: str) -> Optional[MasjidMember]:
+    from src.services.notification import NotificationService
+    db_obj = db.get(MasjidMember, member_id)
+    if db_obj:
+        db_obj.role = role
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        
+        # Trigger notification
+        NotificationService.notify_role_change(db, db_obj)
     return db_obj
 
 def get_user_masjid_membership(db: Session, user_id: str, masjid_id: str) -> Optional[MasjidMember]:

@@ -5,6 +5,7 @@ from src.schemas.expense import ExpenseCreate, ExpenseRead, ExpenseUpdate, Expen
 from src.crud import crud_expense
 from src.api.dependencies import get_current_user, RoleChecker
 from src.models.user import User
+from src.services.notification import NotificationService
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -33,7 +34,20 @@ def create_expense(
         **obj_in.model_dump(),
         recorded_by=current_user.id
     )
-    return crud_expense.expense.create(session=session, obj_in=expense_in)
+    expense = crud_expense.expense.create(session=session, obj_in=expense_in)
+    
+    # Notify admins
+    NotificationService.notify_masjid_admins(
+        db=session,
+        masjid_id=expense.masjid_id,
+        type="expense_recorded",
+        title="New Expense Recorded",
+        body=f"New expense of {expense.amount} {expense.currency} recorded: {expense.title}",
+        related_entity_type="expense",
+        related_entity_id=expense.id
+    )
+    
+    return expense
 
 @router.get("/", response_model=List[ExpenseRead])
 def read_expenses(
