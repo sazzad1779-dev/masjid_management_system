@@ -11,6 +11,6 @@ This document tracks the implemented features and their corresponding functions/
 | 05 | Expense Management | Done | `create_expense`, `read_expenses`, `get_monthly_summary`, `read_expense`, `update_expense`, `delete_expense` |
 | 06 | Account & Balance Management | Done | `create_account`, `read_accounts`, `get_account_balance`, `create_transfer` |
 | 07 | Monthly Donation & Donor Management | Done | `create_donor`, `read_donors`, `generate_monthly_donations`, `verify_donation_payment` |
-| 08 | Reporting & Analytics | Pending | |
+| 08 | Reporting & Analytics | Done | `get_summary_stats`, `get_weekly_report`, `get_monthly_report`, `get_yearly_report`, `get_donor_report` |
 | 09 | Notifications & Alerts | Pending | |
 | 10 | Audit & Activity Log | Pending | |
