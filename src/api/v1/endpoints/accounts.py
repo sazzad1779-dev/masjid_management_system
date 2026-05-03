@@ -133,3 +133,20 @@ def create_transfer(
     )
     
     return transfer
+
+@router.get("/transfer", response_model=List[AccountTransferRead])
+def read_transfers(
+    *,
+    session: Session = Depends(get_session),
+    masjid_id: uuid.UUID,
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(get_current_user)
+):
+    current_role = getattr(current_user, "_token_role", "viewer")
+    current_masjid_id = getattr(current_user, "_token_masjid_id", None)
+
+    if current_role != "super_admin" and str(current_masjid_id) != str(masjid_id):
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    return crud_account.get_transfers(session, masjid_id=masjid_id, skip=skip, limit=limit)

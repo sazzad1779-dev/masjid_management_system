@@ -32,6 +32,10 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     password: Optional[str] = None
 
+class UserSignup(UserCreate):
+    institution_name: str
+    admin_name: str
+
 class UserRead(UserBase):
     id: uuid.UUID
     created_at: datetime
@@ -51,3 +55,8 @@ class TokenPayload(BaseModel):
     role: Optional[str] = None
     masjid_id: Optional[str] = None
     type: Optional[str] = None
+
+class UserInvite(BaseModel):
+    email: str
+    role: str = "viewer"
+    masjid_id: uuid.UUID

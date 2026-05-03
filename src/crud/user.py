@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from sqlmodel import Session, select
 from src.models.user import User
 from src.schemas.user import UserCreate, UserUpdate
@@ -16,6 +16,10 @@ def get_user(db: Session, user_id: str) -> Optional[User]:
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     statement = select(User).where(User.email == email)
     return db.exec(statement).first()
+
+def get_users_by_masjid(db: Session, masjid_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[User]:
+    statement = select(User).join(MasjidMember).where(MasjidMember.masjid_id == masjid_id).offset(skip).limit(limit)
+    return db.exec(statement).all()
 
 def create_user(db: Session, user_in: UserCreate) -> User:
     db_obj = User(

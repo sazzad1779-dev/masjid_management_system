@@ -22,6 +22,10 @@ def get_donors(db: Session, *, masjid_id: uuid.UUID, skip: int = 0, limit: int =
     statement = select(Donor).where(Donor.masjid_id == masjid_id).offset(skip).limit(limit)
     return db.exec(statement).all()
 
+def get_donor_by_user_id(db: Session, user_id: uuid.UUID) -> Optional[Donor]:
+    statement = select(Donor).where(Donor.user_id == user_id)
+    return db.exec(statement).first()
+
 def update_donor(db: Session, *, db_obj: Donor, obj_in: DonorUpdate) -> Donor:
     update_data = obj_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -38,4 +42,20 @@ def deactivate_donor(db: Session, *, donor_id: uuid.UUID) -> Optional[Donor]:
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
+    return db_obj
+
+def activate_donor(db: Session, *, donor_id: uuid.UUID) -> Optional[Donor]:
+    db_obj = db.get(Donor, donor_id)
+    if db_obj:
+        db_obj.is_active = True
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+    return db_obj
+
+def hard_delete_donor(db: Session, *, donor_id: uuid.UUID) -> Optional[Donor]:
+    db_obj = db.get(Donor, donor_id)
+    if db_obj:
+        db.delete(db_obj)
+        db.commit()
     return db_obj
